@@ -2,6 +2,7 @@
 #include <map>
 #include <iostream>
 #include <asio.hpp>
+/*if you want to work in home intall lib boost*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server //////////////////////////////////////////////////////////////////////
@@ -57,6 +58,8 @@ class Server
     void broadcast (const std::string & message, ClientPtr emitter = nullptr);
     // Suppression d'un client.
     void remove (ClientPtr);
+    void process_quit(ClientPtr, const std::string &);
+    void process_list (ClientPtr, const std::string &);
 
   public:
     // Constructeur.
@@ -121,7 +124,22 @@ void Server::Client::rename (const std::string & alias)
   m_alias = alias;
   write ("#alias " + alias);
 }
+void process_quit(ClientPtr, const std::string &)
+{
+  //TODO
+}
+ void process_list (ClientPtr client, const std::string &)
+{
+    std::string m = "#list";
+    auto it = m_clients.begin();
+  for(;it ;it!=m_clients.end();i++)
+  {
+     m += it->get()->alias()+" ";
+    }
+    client->write(m);
+  
 
+}
 void Server::Client::read ()
 {
   //std::cout << "Client::read" << std::endl;
@@ -184,7 +202,16 @@ void Server::start ()
 
 Server::ClientPtr Server::find (const std::string & alias)
 {
-  // TODO
+  auto it = m_clients.begin();
+  for(;it ;it!=m_clients.end();i++)
+  {
+    std::string  c = it->get()->alias();
+    if(c == alias)
+    {
+      return it->get()->shared_from_this();
+    }
+  
+  }
   return nullptr;
 }
 
@@ -212,6 +239,7 @@ void Server::process (ClientPtr client, const std::string & message)
   if (iss >> command)
   {
     // Commande ?
+
     if (command[0] == '/')
     {
       // Consommation des caractères blancs.
@@ -223,6 +251,15 @@ void Server::process (ClientPtr client, const std::string & message)
       // - S'il existe, l'appeler ;
       // - Sinon, "#invalid_command" !
       // TODO
+      auto it = PROCESSORS.find(data);
+      if(it != PROCESSORS.end())
+      {
+        (this->*it>second)(client,cammand);
+        else
+        {
+          process_message(client,INVALID_COMMAND);
+        }
+      }
     }
     else
       process_message (client, message);
